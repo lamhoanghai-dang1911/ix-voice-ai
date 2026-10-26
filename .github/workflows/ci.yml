@@ -33,7 +33,7 @@ jobs:
   docker-publish:
     name: Build & Publish Docker Image to GHCR
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -75,7 +75,7 @@ jobs:
   deploy-staging:
     name: 🧪 Deploy to Staging (Auto)
     needs: docker-publish
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     environment: staging
     steps:
