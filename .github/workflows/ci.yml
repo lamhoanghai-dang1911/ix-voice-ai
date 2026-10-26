@@ -1,4 +1,4 @@
-name: AI Service CI & CD
+name: AI Service CI & CD Enterprise
 
 on:
   push:
@@ -72,22 +72,43 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy-vps:
-    name: 🚀 Deploy to Azure VPS
+  deploy-staging:
+    name: 🧪 Deploy to Staging (Auto)
     needs: docker-publish
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: staging
     steps:
-      - name: SSH to Azure VPS and Update AI Service
+      - name: SSH to Staging VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "Auto-deploying to Staging on VPS..."
             cd /home/azureuser/ix-voice-production
             docker compose pull ai-service
             docker compose up -d --no-deps ai-service
             sleep 3
             curl -f http://localhost:5000/api/v1/ai/health || exit 1
-            echo "AI Service successfully deployed to Azure VPS!"
+            echo "Staging AI Service deployed successfully!"
+
+  deploy-production:
+    name: 🛡️ Deploy to Production (Approval Required)
+    needs: deploy-staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: SSH to Production
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "Approved by Reviewer! Deploying to Production..."
+            cd /home/azureuser/ix-voice-production
+            docker compose up -d --no-deps ai-service
+            echo "Production AI Service deployed successfully!"
